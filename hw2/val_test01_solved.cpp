@@ -69,7 +69,7 @@ void f ( int n )
   int i;
   int *x;
 
-  x = ( int * ) malloc ( n * sizeof ( int ) );
+  x = ( int * ) malloc ( (n+1) * sizeof ( int ) );
 
   x[0] = 1;
   cout << "  " << 0 << "  " << x[0] << "\n";
@@ -83,7 +83,13 @@ void f ( int n )
     cout << "  " << i << "  " << x[i] << "\n";
   }
 
-  delete [] x;
+  free(x);
 
   return;
 }
+
+// There were two problems with the code:
+// Problem 1. Illegal reading on Line 82 and illegal writing on Line 83. 
+// Solution 1. I changed Line 72 to allocate one more unit of integer to safely read and write x[n]
+// Problem 2. Mismatched free() / delete / delete [] on Line 86.
+// Solution 2. I changed the delete[] command in Line 86 to free() since x points to a memory allocated using malloc() 

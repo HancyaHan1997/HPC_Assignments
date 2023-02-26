@@ -78,7 +78,7 @@ void junk_data ( )
 //
 //  X = { 0, 1, 2, 3, 4, ?a, ?b, ?c, ?d, ?e }.
 //
-  for ( i = 0; i < 5; i++ )
+  for ( i = 0; i < 10; i++ )
   {
     x[i] = i;
   }
@@ -108,3 +108,5 @@ void junk_data ( )
 
   return;
 }
+
+// The original program used uninitialized value on Line 89 and Line 90. To solve this problem, I changed the scope of the for loop in Line 81 to make sure that every entry of x is initialized. 
