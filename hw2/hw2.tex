@@ -1,0 +1,198 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{array}
+\usepackage{amsmath}
+
+\title{HPC Assignment 2}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,     
+    urlcolor=blue,
+    pdftitle={Overleaf Example},
+    pdfpagemode=FullScreen,
+    }
+    
+\author{Xiayimei Han}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\begin{enumerate}
+    \item \textbf{Finding Memory bugs using valgrind.} 
+    \item \textbf{Optimizing matrix-matrix multiplication.} 
+    \begin{enumerate}
+    \item Using MMult0 as a reference, implement MMult1 and try to rearrange loops to maximize performance. Measure performance for different loop arrangements and try to reason why you get the best performance for a particular order?
+    \newline \textit{The best performance is obtained with loop arrangements that keep the loop with variable $i$ in the innermost layer. This is because all matrices are stored in column major order, and thus when loop $i$ is innermost, we access both matrix $A$ and matrix $C$ continuously. If loop $j$ is innermost, we access none of the three matrices continuously. If loop $p$ is innermost, we only access matrix $B$ continuously. Hence, memory locality is optimized when loop $i$ is innermost and in these cases we get the best performance.} 
+    
+    \item You will notice that the performance degrades for larger matrix sizes that do not fit in the cache. To improve the performance for larger matrices, implement a one level blocking scheme by using BLOCK\_SIZE macro as the block size. By partitioning big matrices into smaller blocks that fit in the cache and multiplying these blocks together at a time, we can reduce the number of accesses to main memory. This resolves the main memory bandwidth bottleneck for large matrices and improves performance. NOTE: You can assume that the matrix dimensions are multiples of BLOCK\_SIZE.
+    \newline \textit{Here is a list of runtime comparisons between one level blocking version (time1) and unblocked version (time0) on CIMS server \\crunchy1.cims.nyu.edu:}
+    \begin{verbatim}
+Dimension       Time1    Gflop/s    GB/s   Time0    Error
+16   2.278590   0.877737  14.043797   2.260371 0.000000e+00
+64   2.925152   0.683779  10.940469   1.762918 0.000000e+00
+112   2.830120   0.706902  11.310430   1.646383 0.000000e+00
+160   2.864059   0.700768  11.212284   1.687762 0.000000e+00
+208   2.865857   0.703370  11.253912   1.627053 0.000000e+00
+256   3.148483   0.639440  10.231039   1.568886 0.000000e+00
+304   2.861669   0.706861  11.309770   1.574514 0.000000e+00
+352   2.836640   0.707264  11.316225   1.516470 0.000000e+00
+400   2.892693   0.707991  11.327851   1.546964 0.000000e+00
+448   3.262805   0.661385  10.582154   1.609756 0.000000e+00
+496   3.826482   0.574008   9.184127   1.670194 0.000000e+00
+544   4.404910   0.511667   8.186677   1.856564 0.000000e+00
+592   4.224629   0.491108   7.857720   1.852332 0.000000e+00
+640   4.428975   0.473507   7.576117   1.852999 0.000000e+00
+688   5.414134   0.481201   7.699213   2.353910 0.000000e+00
+736   4.941424   0.484097   7.745556   2.150653 0.000000e+00
+784   5.985538   0.483055   7.728874   2.583408 0.000000e+00
+832   4.718920   0.488188   7.811013   2.076132 0.000000e+00
+880   5.607525   0.486112   7.777800   2.447729 0.000000e+00
+928   6.723364   0.475464   7.607419   2.893171 0.000000e+00
+976   7.762366   0.479088   7.665408   3.384099 0.000000e+00
+1024   4.990137   0.430346   6.885530   2.597046 0.000000e+00
+1072   5.961111   0.413321   6.613132   2.871033 0.000000e+00
+1120   7.375895   0.380951   6.095219   3.179319 0.000000e+00
+1168   8.826849   0.361038   5.776607   3.620890 0.000000e+00
+1216  10.792504   0.333203   5.331243   4.130426 0.000000e+00
+1264  12.389743   0.325993   5.215896   4.598970 0.000000e+00
+1312  14.245760   0.317063   5.073012   5.160496 0.000000e+00
+1360  16.271083   0.309193   4.947095   5.777049 0.000000e+00
+1408  17.119566   0.326096   5.217533   6.517022 0.000000e+00
+1456  19.818998   0.311482   4.983706   7.098158 0.000000e+00
+1504  21.819252   0.311841   4.989461   7.833847 0.000000e+00
+1552  23.395420   0.319576   5.113218   8.564987 0.000000e+00
+1600  26.305099   0.311423   4.982760   9.404194 0.000000e+00
+1648  28.295357   0.316364   5.061817  10.276929 0.000000e+00
+1696  31.229915   0.312419   4.998696  11.203636 0.000000e+00
+1744  34.210394   0.310107   4.961710  12.192208 0.000000e+00
+1792  33.437434   0.344200   5.507203  13.702287 0.000000e+00
+1840  39.814261   0.312928   5.006852  14.354796 0.000000e+00
+1888  43.417319   0.310008   4.960129  15.513387 0.000000e+00
+1936  45.418919   0.319528   5.112452  16.766196 0.000000e+00
+1984  50.127283   0.311588   4.985409  17.989518 0.000000e+00
+\end{verbatim}
+\textit{I have tried rearranging loops, running the code on my Macbook and using different optimization level flags, but the blocked version never outperformed the unblocked one. I have also discussed the issue with the TAs but there is no clear solution. Maybe the blocking scheme hindered the optimization done by the compiler and the operating system? }
+
+\item  Experiment with different values for BLOCK\_SIZE (use multiples of 4) and measure performance.  What is the optimal value for BLOCK\_SIZE?
+\textit{Here are the experimental results:}
+\begin{verbatim}
+Dimension       Time1    Gflop/s    GB/s   Time0    Error
+4   0.997501   2.005011  32.080179   3.089385 0.000000e+00
+8   0.818969   2.442096  39.073543   2.018790 0.000000e+00
+12   0.721605   2.771603  44.345642   1.628321 0.000000e+00
+16   0.757927   2.638780  42.220473   2.202532 0.000000e+00
+20   0.712153   2.808408  44.934520   2.044605 0.000000e+00
+24   0.712100   2.808595  44.937518   0.778167 0.000000e+00
+28   0.747294   2.676327  42.821235   0.689333 0.000000e+00
+32   0.818155   2.444559  39.112944   0.682755 0.000000e+00
+36   0.824651   2.425329  38.805261   0.644224 0.000000e+00
+40   0.901648   2.218303  35.492847   0.650830 0.000000e+00
+44   1.048979   1.906730  30.507677   0.631838 0.000000e+00
+48   0.993567   2.013117  32.209871   0.658767 0.000000e+00
+52   0.973459   2.054538  32.872610   0.642420 0.000000e+00
+56   0.930868   2.148818  34.381090   0.648620 0.000000e+00
+60   0.914536   2.187077  34.993239   0.635045 0.000000e+00
+64   1.007675   1.984924  31.758781   0.629527 0.000000e+00
+68   0.913668   2.189434  35.030940   0.618516 0.000000e+00
+72   0.882047   2.268144  36.290311   0.624795 0.000000e+00
+76   0.871827   2.295011  36.720170   0.612715 0.000000e+00
+80   0.877367   2.280570  36.489113   0.619331 0.000000e+00
+84   0.869826   2.300423  36.806773   0.608512 0.000000e+00
+88   0.896505   2.231781  35.708496   0.613509 0.000000e+00
+92   0.881986   2.269003  36.304043   0.605059 0.000000e+00
+96   0.883261   2.265777  36.252438   0.606406 0.000000e+00
+100   0.873988   2.290650  36.650399   0.601625 0.000000e+00
+\end{verbatim}
+\textit{The optimal value for BLOCK\_SIZE is 24.}
+
+\item  Now parallelize your matrix-matrix multiplication code using OpenMP: To do that, you have to add -fopenmp to the compiler and comment in the omp.h header file
+\\\textit{Here are the experimental results:}
+\begin{verbatim}
+ Dimension       Time1    Gflop/s    GB/s   Time0    Error
+24   0.580187   3.447167  55.154677   0.393694 0.000000e+00
+72   0.587963   3.402611  54.441782   0.262243 0.000000e+00
+120   0.632791   3.162221  50.595543   0.166788 0.000000e+00
+168   0.684088   2.925015  46.800235   0.181928 0.000000e+00
+216   0.722829   2.788403  44.614443   0.173149 0.000000e+00
+264   0.695096   2.911789  46.588630   0.224584 0.000000e+00
+312   0.822963   2.435720  38.971522   0.184815 0.000000e+00
+360   0.712970   2.879311  46.068981   0.241070 0.000000e+00
+408   0.663299   3.071797  49.148757   0.169793 0.000000e+00
+456   0.687817   3.032802  48.524828   0.192740 0.000000e+00
+504   0.664915   3.080671  49.290743   0.153651 0.000000e+00
+552   0.639892   3.154220  50.467512   0.152441 0.000000e+00
+600   0.744579   2.900970  46.415515   0.208112 0.000000e+00
+648   0.741756   2.934633  46.954120   0.192135 0.000000e+00
+696   0.762572   2.652761  42.444178   0.312801 0.000000e+00
+744   1.007104   2.453555  39.256875   0.332465 0.000000e+00
+792   1.036092   2.876925  46.030806   0.395186 0.000000e+00
+840   0.873046   2.715569  43.449111   0.263769 0.000000e+00
+888   1.063676   2.633235  42.131756   0.501561 0.000000e+00
+936   1.199586   2.734363  43.749801   0.538185 0.000000e+00
+984   1.428655   2.667584  42.681340   0.595318 0.000000e+00
+1032   0.868022   2.532436  40.518977   0.347859 0.000000e+00
+1080   0.890502   2.829218  45.267490   0.402102 0.000000e+00
+1128   1.014832   2.828544  45.256707   0.468653 0.000000e+00
+1176   1.208059   2.692551  43.080814   0.544757 0.000000e+00
+1224   1.357729   2.701228  43.219644   0.636794 0.000000e+00
+1272   1.510784   2.724514  43.592226   0.703721 0.000000e+00
+1320   1.712496   2.686101  42.977616   0.812171 0.000000e+00
+1368   1.897364   2.698594  43.177508   0.910190 0.000000e+00
+1416   2.219537   2.558335  40.933361   1.040095 0.000000e+00
+1464   2.347388   2.673427  42.774828   1.146610 0.000000e+00
+1512   2.988592   2.313230  37.011679   1.257298 0.000000e+00
+1560   3.107842   2.443120  39.089928   1.471959 0.000000e+00
+1608   3.842342   2.164174  34.626780   1.738062 0.000000e+00
+1656   4.091926   2.219644  35.514299   1.885186 0.000000e+00
+1704   4.464277   2.216602  35.465625   2.258831 0.000000e+00
+1752   4.389528   2.450273  39.204373   2.275034 0.000000e+00
+1800   4.954995   2.353988  37.663809   2.613274 0.000000e+00
+1848   5.189388   2.432315  38.917033   2.659065 0.000000e+00
+1896   5.568891   2.447802  39.164829   2.815387 0.000000e+00
+1944   5.730387   2.564099  41.025589   3.419515 0.000000e+00
+1992   6.794390   2.326738  37.227811   3.169586 0.000000e+00
+\end{verbatim}
+\item What percentage of the peak FLOP-rate do you achieve with your code?
+\\\textit{All the programs for this problem were run on CIMS server crunchy1.cims.nyu.edu. We may use the formula }
+\begin{align*}
+    \mbox{Theoretical Maximum FLOPS} &= \mbox{Clock Speed} \times \mbox{Number of Cores} \\
+    &\times  
+       \mbox{SIMD factor} \times  \mbox{FMA factor} \\
+       &\times \mbox{Super-scalarity factor}
+\end{align*}
+\textit{to estimate the theoretical maximum FLOP rate. The clock speed is 2.1 GHz, number of cores = 64, SIMD factor = 512 bits, super scalability = 1, FMA factor = 128 bits, so the theoretical maximum FLOP rate is 8601.6 GFlops/s. Given the experimental results above, my code achieves about 0.64\% of the peak FLOP-rate.}
+    \end{enumerate}
+
+    \item \textbf{Approximating Special Functions Using Taylor Series \& Vectorization.} Please see code in fast-sin.cpp.
+    
+    \item \textbf{Pipelining and Optimization.(a)} A comparison of the performance is illustrated in the following table:
+\begin{center}
+\begin{tabular}{||m{5cm} m{1.5cm} m{1.5 cm} m{1.5 cm} m{1.5 cm} ||} 
+ \hline
+ Vector Size & $1\times 10^7$ & $5\times 10^7$ & $1\times 10^8$ & $5\times 10^8$ \\ [0.5ex] 
+ \hline\hline
+No unrolling & 0.024421 & 0.100846 & 0.177591 & 31.573971 \\ [1ex] 
+ \hline
+Loop unrolling by factor of 2 & 0.014413 & 0.045021 & 0.090178 & 30.442810  \\ [1ex]
+\hline
+Loop unrolling by factor of 4 & 0.013444 & 0.069018 & 0.097265 & 31.031202 \\ [1ex]
+\hline
+Loop unrolling by factor of 2 and indexing optimization &0.013954 & 0.045751 & 0.090693 & 28.747963  \\ [1ex]
+\hline
+Loop unrolling by factor of 4 and indexing optimization &0.013444  & 0.076937 &  0.096679 & 30.373270 \\ [1ex]
+\hline
+Loop unrolling by factor of 2, indexing optimization and disentangling the addition and multiplication part of each instruction & 0.016731 & 0.046341 & 0.089313 & 30.785058\\ [1ex]
+\hline
+Loop unrolling by factor of 4, indexing optimization and disentangling the addition and multiplication part of each instruction & 0.013612 & 0.050548 & 0.093578 & 28.683151 \\ [1ex]
+\hline
+Loop unrolling by factor of 2, indexing optimization and disentangling the addition, multiplication part of each instruction and putting addition right in front of the multiplication of the next iteration &  0.014273 & 0.044497 & 0.088473 & 33.045258 \\ [1ex]
+\hline
+Loop unrolling by factor of 4, indexing optimization and disentangling the addition, multiplication part of each instruction and putting addition right in front of the multiplication of the next iteration &  0.013956 &  0.052212 & 0.096620 & 25.835725 \\ [1ex]
+\hline
+\end{tabular}
+\end{center}
+
+\end{enumerate}
+
+\end{document}
