@@ -1,4 +1,5 @@
 // g++ -std=c++11 -O3 -march=native MMult1.cpp && ./a.out
+// g++ -std=c++11 -O3 -fopenmp MMult1.cpp -o MMult1
 
 #include <stdio.h>
 #include <math.h>
@@ -72,22 +73,24 @@ void MMult1_Blocking(long m, long n, long k, double *a, double *b, double *c)
 
 void MMult1_Blocking_Parallel(long m, long n, long k, double *a, double *b, double *c)
 {
-#pragma omp parallel for default(none) shared(m, n, k, a, b, c)
   for (long p = 0; p < k; p++)
   {
+#pragma omp parallel for
     for (long j = 0; j < n; j += BLOCK_SIZE)
     {
       for (long i = 0; i < m; i += BLOCK_SIZE)
       {
         for (int dj = 0; dj < BLOCK_SIZE; dj++)
         {
+          int new_j = j + dj;
           for (int di = 0; di < BLOCK_SIZE; di++)
           {
-            double A_ip = a[(i + di) + p * m];
-            double B_pj = b[p + (j + dj) * k];
-            double C_ij = c[(i + di) + (j + dj) * m];
+            int new_i = i + di;
+            double A_ip = a[new_i + p * m];
+            double B_pj = b[p + new_j * k];
+            double C_ij = c[new_i + new_j * m];
             C_ij = C_ij + A_ip * B_pj;
-            c[(i + di) + (j + dj) * m] = C_ij;
+            c[new_i + new_j * m] = C_ij;
           }
         }
       }
