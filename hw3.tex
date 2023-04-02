@@ -1,0 +1,139 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage[shortlabels]{enumitem}
+
+\title{HPC Assignment 3}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,     
+    urlcolor=blue,
+    pdftitle={Overleaf Example},
+    pdfpagemode=FullScreen,
+    }
+    
+\author{Xiayimei Han}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{enumerate}
+    \item \textbf{OpenMP warm-up.} Consider the following code and assume it is executes by two threads. The for-loops are executed in two chunks, one per thread, and the independent functions f(i) take $i$ milliseconds. 
+    \begin{verbatim}
+#pragma omp parallel
+{
+    #pragma omp for schedule(static)
+    for (i = 1; i < n; i++)
+        f(i)
+    #pragma omp for schedule(static)
+    for (i = 1; i < n; i++)
+        f(n-i)
+}
+    \end{verbatim} 
+
+\begin{enumerate}[(a)]
+    \item How long would each thread spend to execute the parallel region? How much of that time would be spent in waiting for the other thread? 
+    \\\textit{Let's first consider the case that $n$ is odd. The first for loop would be distributed evenly between the two threads, with the first thread executing f(1), f(3), f(5),\ldots, f(n-2) and the second thread executing f(2), f(4), \ldots, f(n-1). So the first thread would take a total of $\frac{(n-1)^2}{4}$ms to finish the task in the first loop, but the second thread only takes $\frac{(n+1)(n-1)}{4}$ms to finish. Within the second for loop, the first thread would execute $f(n-1), f(n-3), \ldots, f(2)$ and the second thread would execute $f(n-2), f(n-4),\ldots, f(1)$. Thus, the first thread takes $\frac{(n-1)(n+1)}{4}$ms to finish the task in the second for loop, while the second thread takes $\frac{(n-1)^2}{4}$ms to finish. In this case, in total both threads spend $\frac{(n-1)(n+1)}{4}+\frac{(n-1)^2}{4}=\frac{n(n-1)}{2}$ms to execute the parallel region and no time would be spent in waiting for the other thread. \\Now let's consider the case that $n$ is even. For the first for loop, the first thread executes $f(1), f(3), \ldots, f(n-1)$, while the second thread executes $f(2), f(4), \ldots, f(n-2)$. So the first thread would take a total of $\frac{n^2}{4}$ms to finish the task in the first loop, but the second thread only takes $\frac{n(n-2)}{4}$ms to finish. Within the second for loop, the first thread would execute $f(n-1), \ldots, f(1)$ while the second thread executes $f(n-2), f(n-4), \ldots, f(2)$. Thus, the first thread takes $\frac{n^2}{4}$ms to finish the task in the second for loop, while the second thread takes $\frac{n(n-2)}{4}$ms to finish. In this case, in total the first thread spends $\frac{n^2}{4}+\frac{n^2}{4}=\frac{n^2}{2}$ms to execute the parallel region while the second thread spends $\frac{n(n-2)}{4}+\frac{n(n-2)}{4} = \frac{n(n-2)}{2}$. Hence, the second thread waits $n$ ms for the first thread.}
+
+    \item How would the execution time of each thread change if we used schedule(static,1) for
+both loops?
+\\\textit{The execution time of each thread would not change because when no chunk-size is specified, the default value is 1. So schedule(static) has the same effect as schedule(static,1)}.
+
+\item Would it improve if we used schedule(dynamic,1) instead?
+\\\textit{If we used schedule(dynamic, 1) instead,
+OpenMP will still split task into (n-1)+(n-1)=2n-2 chunks, but distribute trunks to threads dynamically without any specific order. For $n$ odd, since schedule(static) already achieves zero waiting time, we should not expect any improvement. For $n$ even, schedule(dynamic,2) could potentially eliminate the $n$ ms waiting time. However, the dynamic scheduling type has higher overhead than the static scheduling type because it dynamically distributes the iterations during the runtime, so the improvement may be small, if there is any at all.} 
+
+\item Is there an OpenMP directive that allows to eliminate the waiting time and how much would
+the threads take when using this clause?
+\\\textit{As mentioned in the solution to part (c), schedule(dynamic,1) allows to eliminate the waiting time. With this clause, if we ignore the overhead, for $n$ odd, one thread would take $f(1), f(3), \ldots, f(n-2), f(n-1), f(n-3), \ldots, f(2)$ while the other thread would take $f(2), f(4), \ldots, f(n-1), f(n-2),f(n-4),\ldots, f(1)$; for $n$ even, one thread would take $f(1), f(3), \ldots, f(n-1), f(n-2), f(n-4), \ldots, f(2)$ while the other thread would take $f(2), f(4), \ldots, f(n-2), f(n-1),f(n-3),\ldots, f(1)$.}
+\end{enumerate}
+
+\item \textbf{ Parallel Scan in OpenMP. } Parallelize the provided serial code. Run it with different thread numbers and report the
+architecture you run it on, the number of cores of the processor and the time it takes.
+\\\textit{I ran the code on Courant server crunchy6.cims.nyu.edu, which has 64 cores. Below is a list of computing time of parallel version vs sequential version with varying thread numbers:}
+\begin{center}
+\begin{tabular}{||c c c||} 
+ \hline
+ Thread Number & Sequential Time & Parallel Time\\ [0.5ex] 
+ \hline\hline
+ 1 &  1.205574s & 2.663482s \\ 
+ \hline
+ 2 & 1.230413s  & 1.531056s \\
+ \hline
+ 3 & 1.187263s  &  0.945209s \\
+ \hline
+ 4 &  1.235632s &  0.700903s \\
+ \hline
+ 5 & 1.225656s & 0.554321s \\ 
+ \hline
+ 6 & 1.176366s & 0.498652s \\ 
+\hline
+ 7 & 1.217298s & 0.455967s \\ 
+ \hline
+  8 & 1.219647s  & 0.463825s \\
+ \hline
+ 9 & 1.227761s  & 0.446195s \\ 
+  \hline
+10 & 1.239708s  & 0.454533s \\  [1ex] 
+  \hline
+\end{tabular}
+\end{center}
+The decrease in computing time with more threads becomes negligible after 7 threads, due to the competition for memory.
+
+\item \textbf{OpenMP version of 2D Jacobi/Gauss-Seidel smoothing.} 
+\begin{enumerate}
+    \item Write OpenMP implementations of the Jacobi and the Gauss-Seidel method with redblack coloring, and call them jacobi2D-omp.cpp and gs2D-omp.cpp. Make sure your
+OpenMP codes also compile without OpenMP compilers using preprocessor commands
+(\#ifdef OPENMP) as I’ll post about on Ed. Note that when implemented correctly, the
+results for both methods should not vary when you change the number of threads.
+\item Choose the right hand side $f(x, y) \equiv 1$, and report timings for different values of N and
+different numbers of threads, specifying the machine you run on. These timings should be
+for a fixed number of iterations as, similar to the 1D case, the convergence is slow, and slows
+down even further as N becomes larger.
+\\\textit{All the experiments for this question are run on CIMS server crunchy6.cims.nyu.edu. Below is a table of the computing time of the OpenMP implementation of the Jacobi method with different combinations of $N$ and number of threads:}
+\begin{center}
+\begin{tabular}{ c c c c c c}
+ & N = 10  & N = 50  & N = 100 & N = 500  & N =1000 \\
+1 thread & 0.009596s & 0.212891s & 0.651987s & 16.327654s & 66.644293s\\
+2 threads & 0.008239s & 0.120658s & 0.332212s & 8.548849s & 41.216261s \\
+3 threads & 0.008048s & 0.085456s & 0.281364s & 7.727376s &  21.965161s \\
+4 threads & 0.007389s & 0.062876s &  0.237294s & 4.106418s & 18.146795s \\
+5 threads & 0.007757s & 0.040992s & 0.140911s &  4.913742s & 13.553462s \\
+6 threads & 0.007710s & 0.045890s & 0.159740s & 2.781698s &  11.045414s \\
+7 threads & 0.008340s & 0.042800s &  0.150914s & 3.465461s & 9.496263s \\
+8 threads & 0.009819s & 0.033962s & 0.123520s & 2.801072s & 8.294254s \\
+9 threads & 0.009775s & 0.035271s & 0.089158s & 1.946407s & 7.712369s \\
+10 threads & 0.010146s & 0.028219s & 0.079290s & 1.701307s & 6.868201s  \\
+11 threads & 0.011454s & 0.032925s & 0.103358s & 1.644663s & 6.127445s \\
+12 threads & 0.009339s & 0.032885s & 0.094654s & 1.503625 & 5.673191s  \\
+13 threads & 0.010080s & 0.027591s & 0.067496s & 1.421102s & 6.859418s \\
+14 threads & 0.011247s & 0.028185s & 0.080049s & 1.240460s & 5.286098s \\
+15 threads &  0.011119s & 0.028244s & 0.064715s & 1.176656s & 4.690308 
+\end{tabular}
+\end{center}
+And next is a table of the computing time of the OpenMP implementation of the Gauss-Seidel method with different combinations of $N$ and number of threads:
+\begin{center}
+\begin{tabular}{ c c c c c c}
+ & N = 10  & N = 50  & N = 100 & N = 500  & N =1000 \\
+1 thread & 0.010500s & 0.201943s & 0.79685s & 15.644023s  & 67.080203s\\
+2 threads & 0.011283s & 0.107444s & 0.408751s & 7.815467s & 32.398457s \\
+3 threads & 0.012312s & 0.077663s &  0.222186s & 5.238052s & 20.841774s \\
+4 threads & 0.012732s & 0.061504s &  0.213689s & 3.981634s & 15.687263s \\
+5 threads & 0.012495s & 0.050665s & 0.173242s &  3.157312s & 12.583936s \\
+6 threads & 0.012455s & 0.048147s & 0.122238s & 3.411521s & 10.651840s \\
+7 threads &  0.015558s & 0.043345s & 0.111852s & 2.795937s & 9.708144s \\
+8 threads & 0.015387s & 0.040625s &  0.099283s & 2.026428s & 10.190147s \\
+9 threads & 0.017639s &  0.039201s & 0.091463s & 1.879562s & 7.138605s \\
+10 threads & 0.016740s & 0.037212s &0.097216s&1.779976s & 6.455602s \\
+11 threads & 0.020742s & 0.038445s &  0.100272s &1.686387s & 5.849107s \\
+12 threads & 0.020570s & 0.036512s & 0.082333s &1.414929s &5.428249s \\
+13 threads & 0.021572s  & 0.035796s & 0.074383s & 1.301696s & 5.070265s\\
+14 threads & 0.020002s & 0.037248s & 0.071595s & 1.205163s & 4.727802s \\
+15 threads & 0.021252s &  0.037063s &0.075962s& 1.234777s & 4.376480s
+\end{tabular}
+\end{center}
+\end{enumerate}
+\end{enumerate}
+\end{document}
