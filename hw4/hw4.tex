@@ -1,0 +1,56 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage[shortlabels]{enumitem}
+
+\title{HPC Assignment 4}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,     
+    urlcolor=blue,
+    pdftitle={Overleaf Example},
+    pdfpagemode=FullScreen,
+    }
+    
+\author{Xiayimei Han}
+\date{\today}
+
+\begin{document}
+\maketitle
+\begin{enumerate}
+    \item \textbf{Greene network test.} Use the pingpong example from class to test the latency and bandwidth on Greene. To do that, you must send messages between CPU cores that are on different nodes, such that they go through the network.
+    
+    \textbf{Solution: }Here is the batch file for the task:
+    \begin{verbatim}
+#!/bin/bash 
+#SBATCH --nodes=2                        # requests 2 compute servers
+#SBATCH --ntasks-per-node=1              # runs 1 tasks on each server
+#SBATCH --cpus-per-task=1                # uses 1 compute core per task
+#SBATCH --time=1:00:00
+#SBATCH --mem=2GB
+#SBATCH --job-name=pingpong
+#SBATCH --output=pingpong.out
+
+mpirun -np 2 ./pingpong 0 1
+    \end{verbatim}
+According to the output, on Greene the latency is 2.715395e-03 ms and the bandwith is 1.170003e+01 GB/s.
+
+\item \textbf{MPI ring communication.} Write a distributed memory program that sends an integer in a ring starting from process 0 to 1 to 2 (and so on). The last process sends the message back to process
+0. Perform this loop $N$ times, where $N$ is set in the program or on the command line.
+\begin{enumerate}
+    \item Start with sending the integer 0 and let every process add its rank to the integer it received before it sends it to the next processor. Use the result after $N$ loops to check if all processors have properly added their contribution each time they received and sent the message.
+    \item Time your program for a larger $N$ and estimate the latency on your system (i.e., the time used for each communication). Use either Greene or several machines on the the NYU CIMS network for this test. If you use MPI on a single processor with multiple cores, the available memory is logically distributed, but messages are not actually sent through a network. Specify the timings you find and which machines you ran on.
+    \item Hand in your solution using the filename \textit{int\_ring.c}.
+    
+    \item Modify your code such that instead of a single integer being sent in a ring, you communicate a large array of about 2 MByte in a ring. Time the communication and use these timings to estimate the bandwidth of your system (i.e., the amount of data that can be communicated per second).
+
+    \textbf{Solution:} I ran the program with 3 processes and performed the loop 100 times on Greene nodes cs[488-490]. The latency is 1.519663e-03 ms and the bandwidth is 7.056399e+03 MB/s.
+
+\end{enumerate}
+
+\item Extend the MPI-parallel implementation of the 1D Jacobi smoothing from class to 2D. You can take the number of points in each dimension as a power of 2 such that you can easily split it into pieces for 2 $\times$ 2, 4 $\times$ 4, 8 $\times$ 8 etc processors. Instead of communicating one point to the right and one to the left as we have seen in 1D, now you communicate n points to left, right, top and bottom. Most other things should be similar.
+
+\item \textbf{Pitch your final project.} I plan to do a parallel k-means project with Maya Balaji. Specifically, we will get data from  \href{https://www.kaggle.com/datasets/hunter0007/ecommerce-dataset-for-predictive-marketing-2023}{the Supermarket dataset for predictive marketing 2023 on Kaggle}. After examining the dateset, we will decide on a distance threshold and in the first iteration, we randomly pick k centers from the data that are at least this distance away from each other. Then we scatter all the data to m threads. Within each thread, each data point is matched to the closest center, and the thread records how the center should be updated to be the euclidean mean of all the points in its cluster. After processing their own share of data, all the threads summarize how the k centers should be updated according to their share of data, and all the m updates are summarized and implemented via an MPI-allreduce command. Then another iteration starts with the updated k centers. Repeat the iterations until each center changes by no more than the convergence threshold. We will also experiment and decide the appropriate convergence threshold during the project. 
+\end{enumerate}
+\end{document}
